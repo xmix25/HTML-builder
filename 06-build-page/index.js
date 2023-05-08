@@ -31,14 +31,39 @@ async function createCSSBundle() {
   fs.writeFile(path.join(__dirname, 'project-dist', 'style.css'), bundle);
 }
 
-async function dirCopy(dirPath, entryPoit) {}
+async function dirCopy(folder, newFolderPath) {
+  await fs.mkdir(newFolderPath, { recursive: true });
+  await fs.mkdir(path.join(newFolderPath, path.basename(folder)), {
+    recursive: true,
+  });
+  const filesToCopy = await fs.readdir(folder, {
+    encoding: 'utf-8',
+    withFileTypes: true,
+  });
+  for (const fileToCopy of filesToCopy) {
+    if (fileToCopy.isFile()) {
+      await fs.copyFile(
+        path.join(folder, fileToCopy.name),
+        path.join(newFolderPath, path.basename(folder), fileToCopy.name)
+      );
+    } else {
+      await dirCopy(
+        path.join(folder, fileToCopy.name),
+        path.join(newFolderPath, path.basename(folder))
+      );
+    }
+  }
+}
 
 async function bundle() {
-  fs.mkdir(path.join(__dirname, 'project-dist'), { recursive: true });
-  // await dirCopy(
-  //   path.join(__dirname, 'assets'),
-  //   path.join(__dirname, 'project-dist')
-  // );
+  await fs.rm(path.join(__dirname, 'project-dist'), {
+    recursive: true,
+    force: true,
+  });
+  await dirCopy(
+    path.join(__dirname, 'assets'),
+    path.join(__dirname, 'project-dist')
+  );
   const template = await fs.readFile(
     path.join(__dirname, 'template.html'),
     'utf-8'
